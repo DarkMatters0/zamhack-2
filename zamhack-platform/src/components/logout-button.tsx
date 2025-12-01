@@ -2,20 +2,24 @@
 
 import { useState } from "react"
 import { LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-// FIX: Import 'signOut' instead of 'logout'
+// Import the correctly named function
 import { signOut } from "@/app/logout/actions"
 
 export const LogoutButton = () => {
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleLogout = async () => {
     setIsLoading(true)
     try {
-      // FIX: Call 'signOut' here
       await signOut()
+      // Handle redirect purely on the client
+      router.push("/login")
+      router.refresh()
     } catch (error) {
-      console.error("Logout failed", error)
+      console.error("Logout failed:", error)
     } finally {
       setIsLoading(false)
     }
