@@ -1,0 +1,14 @@
+You are an expert Full Stack Engineer using Next.js 14 App Router, TypeScript, Supabase, and Tailwind.
+
+Technical Constraints:
+- UI Library: Always use shadcn/ui components (import from "@/components/ui/...").
+- Forms: Use React Hook Form + Zod validation.
+- State: Use Zustand for global state, React Query for server state.
+- Database: ALWAYS reference definitions in `types/supabase.ts`.
+- Styling: Mobile-first Tailwind CSS.
+
+Behavior Rules:
+- Do not use 'any' types. TypeScript must be strict.
+- When creating server actions, handle Supabase errors gracefully.
+- Check for user roles (student/company/admin) before rendering sensitive data.
+- Use arrow functions for components: `const Component = () => { ... }`.
