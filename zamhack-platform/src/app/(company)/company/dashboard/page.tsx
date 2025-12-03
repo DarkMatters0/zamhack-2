@@ -7,7 +7,6 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 
 type Challenge = Database["public"]["Tables"]["challenges"]["Row"]
-// Remove unused types if you want, or keep for future reference
 
 interface RecentSubmission {
   id: string
@@ -80,12 +79,13 @@ async function getCompanyDashboardData(): Promise<DashboardData> {
     throw new Error("Organization not found in database")
   }
 
-  // Active Challenges
+  // Active Challenges (Updated to include Drafts/Pending)
   const { data: activeChallenges } = await supabase
     .from("challenges")
     .select("*")
     .eq("organization_id", profile.organization_id)
-    .in("status", ["approved", "in_progress"])
+    // FIX: Include 'draft' and 'pending_approval' so creators see their new work
+    .in("status", ["approved", "in_progress", "draft", "pending_approval"])
     .order("created_at", { ascending: false })
 
   const activeChallengesList = (activeChallenges as Challenge[]) || []
@@ -163,7 +163,6 @@ async function getCompanyDashboardData(): Promise<DashboardData> {
           .map((s) => s.milestone_id)
           .filter(Boolean) as string[]
         
-        // FIX: Handle potential null participant_id safely
         const challengeIdsFromSubs = submissions
           .map((s) => s.participant_id ? participantMap.get(s.participant_id) : null)
           .filter(Boolean) as string[]
@@ -272,6 +271,8 @@ export default async function CompanyDashboardPage() {
       case "approved": return "success"
       case "in_progress": return "default"
       case "under_review": return "warning"
+      case "draft": return "outline" // Added Draft visual
+      case "pending_approval": return "warning" // Added Pending visual
       default: return "outline"
     }
   }
