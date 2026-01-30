@@ -45,12 +45,13 @@ export const GradingForm = ({ submissionId, initialEvaluation }: GradingFormProp
     },
   })
 
-  const isDraft = form.watch("isDraft")
-
+  // We keep this signature for the buttons to use manually
   const onSubmit = async (data: GradingFormValues, isDraftOverride?: boolean) => {
     setIsSubmitting(true)
     try {
+      // If override is undefined (e.g. form submission via Enter), use the checkbox value
       const finalIsDraft = isDraftOverride !== undefined ? isDraftOverride : data.isDraft
+      
       const result = await submitEvaluation(
         submissionId,
         data.score,
@@ -83,7 +84,8 @@ export const GradingForm = ({ submissionId, initialEvaluation }: GradingFormProp
         <CardTitle>Evaluation</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* FIX: Wrapped onSubmit in an arrow function to prevent the Event object from being passed as 'isDraftOverride' */}
+        <form onSubmit={form.handleSubmit((data) => onSubmit(data))} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="score">Score (0-100)</Label>
             <Input
@@ -161,4 +163,3 @@ export const GradingForm = ({ submissionId, initialEvaluation }: GradingFormProp
     </Card>
   )
 }
-
