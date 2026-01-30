@@ -13,13 +13,11 @@ import Link from "next/link"
 // --- Types ---
 type Challenge = Database["public"]["Tables"]["challenges"]["Row"]
 type Organization = Database["public"]["Tables"]["organizations"]["Row"]
-// Remove manual extension since supabase.ts should now have points
 type Milestone = Database["public"]["Tables"]["milestones"]["Row"]
 type Submission = Database["public"]["Tables"]["submissions"]["Row"]
 type Evaluation = Database["public"]["Tables"]["evaluations"]["Row"]
 type ChallengeParticipant = Database["public"]["Tables"]["challenge_participants"]["Row"]
 
-// Define a robust Team type that handles the nullable leader_id from DB
 interface TeamData {
   id: string
   name: string
@@ -189,31 +187,27 @@ export default async function ChallengePage({
   const currency = challenge.currency || "PHP"
 
   // Process Milestones Status
-  let previousMilestoneCompleted = true // First milestone is always unlocked (if joined)
+  let previousMilestoneCompleted = true 
 
   const milestonesWithStatus: MilestoneWithStatus[] = milestones.map(
     (milestone) => {
-      // Find submission for this milestone
       const submission =
         submissions.find((s) => s.milestone_id === milestone.id) || null
       
-      // Find evaluation for that submission
       const evaluation = submission
         ? evaluations.find((e) => e.submission_id === submission.id) || null
         : null
 
-      // Determine Status
       let status: MilestoneStatus = "locked"
 
       if (hasJoined) {
         if (submission) {
-          status = "completed" // Submitted (waiting review or reviewed)
+          status = "completed"
         } else if (previousMilestoneCompleted) {
-          status = "in_progress" // Current active milestone
+          status = "in_progress"
         }
       }
 
-      // Update previous completion for next iteration
       previousMilestoneCompleted = !!submission
 
       return {
@@ -225,7 +219,6 @@ export default async function ChallengePage({
     }
   )
 
-  // Calculate Progress
   const completedCount = submissions.length
   const totalMilestones = milestones.length
   const progressPercentage =
@@ -264,7 +257,6 @@ export default async function ChallengePage({
               </span>
             </div>
 
-            {/* Fee Display */}
             {hasEntryFee ? (
               <div className="flex items-center gap-1 text-green-700 font-medium px-2 py-0.5 bg-green-50 rounded-full border border-green-200">
                 <CreditCard className="h-4 w-4" />
@@ -337,11 +329,9 @@ export default async function ChallengePage({
                     </Link>
                   </Button>
                 ) : (
-                  // FREE FLOW
+                  // FREE FLOW - UPDATED PROP USAGE
                   <JoinChallengeDialog
-                    challengeId={id}
-                    // Fix: Convert TeamData to the exact shape expected by JoinChallengeDialog
-                    // We ensure leader_id is a string (default to empty string if null)
+                    challengeId={id} // Changed from challenge={challenge}
                     userTeam={userTeam ? { 
                       id: userTeam.id, 
                       name: userTeam.name, 
@@ -349,6 +339,11 @@ export default async function ChallengePage({
                     } : null}
                     userId={userId}
                     registrationClosed={isRegistrationClosed}
+                    trigger={
+                      <Button className="w-full font-bold shadow-md" size="lg">
+                        Join Challenge (Free)
+                      </Button>
+                    }
                   />
                 )}
               </div>
@@ -443,6 +438,10 @@ export default async function ChallengePage({
                         // Fix: Convert null to undefined for SubmissionForm prop type compatibility
                         teamId={userTeam?.id || undefined}
                         isTeamLeader={userTeam?.leader_id === userId}
+                        // Added requirement props from database
+                        requiresGithub={milestone.requires_github}
+                        requiresUrl={milestone.requiresgit add ._url}
+                        requiresText={milestone.requires_text}
                       />
                     </div>
                   )}
