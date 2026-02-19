@@ -22,14 +22,19 @@ export function CloseChallengeButton({ challengeId, disabled }: { challengeId: s
 
   const handleClose = async () => {
     setLoading(true)
-    const result = await closeChallenge(challengeId)
-    if (result.success) {
-      toast.success("Challenge closed and winners announced!")
-      window.location.reload() // Reload to update UI state
-    } else {
-      toast.error(result.error || "Failed to close challenge")
+    try {
+      const result = await closeChallenge(challengeId)
+      if (result.success) {
+        toast.success("Challenge closed and winners announced!")
+        window.location.reload()
+      } else {
+        toast.error(result.error ?? "Failed to close challenge")
+      }
+    } catch (e) {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (

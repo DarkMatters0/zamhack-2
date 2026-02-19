@@ -4,7 +4,6 @@ import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
 
 // --- EXISTING JOIN LOGIC ---
-// FIX: Updated signature to accept teamId as the second parameter
 export async function joinChallenge(challengeId: string, teamId?: string, forceJoin: boolean = false) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -13,7 +12,6 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
     return { error: "You must be logged in to join a challenge." }
   }
 
-  // 1. Fetch Target Challenge Details
   const { data: targetChallenge, error: fetchError } = await supabase
     .from("challenges")
     .select("title, start_date, end_date, status, registration_deadline")
@@ -24,7 +22,6 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
     return { error: "Challenge not found." }
   }
 
-  // FIX: Ensure dates exist before processing
   if (!targetChallenge.start_date || !targetChallenge.end_date || !targetChallenge.registration_deadline) {
     return { error: "This challenge has missing date information and cannot be joined." }
   }
@@ -34,12 +31,10 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
   const endDate = new Date(targetChallenge.end_date)
   const regDeadline = new Date(targetChallenge.registration_deadline)
 
-  // 2. Validate Challenge Status
   if (targetChallenge.status !== 'approved' && targetChallenge.status !== 'in_progress') {
     return { error: "This challenge is not open for registration." }
   }
 
-  // 3. Late-Join Policy
   const oneDay = 24 * 60 * 60 * 1000
   const isEndingSoon = (endDate.getTime() - now.getTime()) < oneDay
 
@@ -51,7 +46,6 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
     return { error: "Registration closed: This challenge ends in less than 24 hours." }
   }
 
-  // 4. Check for Existing Participation
   const { data: existing } = await supabase
     .from("challenge_participants")
     .select("id")
@@ -63,7 +57,6 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
     return { error: "You are already joined in this challenge." }
   }
 
-  // 5. Schedule Overlap Check (Skip if forceJoin is true)
   if (!forceJoin) {
     const { data: activeParticipations } = await supabase
       .from("challenge_participants")
@@ -86,7 +79,6 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
         const currentStart = new Date(p.challenge.start_date)
         const currentEnd = new Date(p.challenge.end_date)
 
-        // Overlap Formula: (StartA <= EndB) and (EndA >= StartB)
         return (startDate <= currentEnd) && (endDate >= currentStart)
       })
 
@@ -100,13 +92,12 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
     }
   }
 
-  // 6. Proceed to Join
   const { error: joinError } = await supabase
     .from("challenge_participants")
     .insert({
       challenge_id: challengeId,
       user_id: user.id,
-      team_id: teamId || null, // FIX: Map the passed teamId here
+      team_id: teamId || null,
       status: 'active',
       joined_at: new Date().toISOString()
     })
@@ -121,15 +112,13 @@ export async function joinChallenge(challengeId: string, teamId?: string, forceJ
   return { success: true }
 }
 
-// --- NEW ACTION: SUBMIT FOR APPROVAL ---
+// --- ACTION: SUBMIT FOR APPROVAL ---
 export async function submitChallengeForApproval(challengeId: string) {
   const supabase = await createClient()
   
-  // 1. Auth Check
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Unauthorized" }
 
-  // 2. Ownership Check
   const { data: challenge } = await supabase
     .from("challenges")
     .select("created_by")
@@ -138,10 +127,9 @@ export async function submitChallengeForApproval(challengeId: string) {
 
   if (!challenge) return { error: "Challenge not found" }
 
-  // 3. Update Status
   const { error } = await supabase
     .from("challenges")
-    .update({ status: "pending_approval" as any }) // Type cast if enum isn't synced
+    .update({ status: "pending_approval" as any })
     .eq("id", challengeId)
 
   if (error) {
@@ -152,13 +140,13 @@ export async function submitChallengeForApproval(challengeId: string) {
   return { success: true }
 }
 
-// --- NEW ACTION: CLOSE CHALLENGE & PICK WINNERS ---
-export async function closeChallenge(challengeId: string) {
+// --- ACTION: CLOSE CHALLENGE & PICK WINNERS ---
+export async function closeChallenge(challengeId: string): Promise<{ success: boolean; error: string | null }> {
   const supabase = await createClient()
   
   // 1. Auth & Ownership Check
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Unauthorized" }
+  if (!user) return { success: false, error: "Unauthorized" }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -167,7 +155,7 @@ export async function closeChallenge(challengeId: string) {
     .single()
 
   if (!profile || (profile.role !== 'company_admin' && profile.role !== 'company_member')) {
-    return { error: "Only company admins can close challenges." }
+    return { success: false, error: "Only company admins can close challenges." }
   }
 
   // 2. Fetch Challenge to verify Org
@@ -178,11 +166,10 @@ export async function closeChallenge(challengeId: string) {
     .single()
 
   if (!challenge || challenge.organization_id !== profile.organization_id) {
-    return { error: "Unauthorized access to this challenge." }
+    return { success: false, error: "Unauthorized access to this challenge." }
   }
 
-  // 3. Fetch All Submissions with Evaluations
-  // We get participants and nested submission evaluations to sum scores
+  // 3. Fetch All Participants with Submissions & Evaluations
   const { data: participants } = await supabase
     .from("challenge_participants")
     .select(`
@@ -196,13 +183,11 @@ export async function closeChallenge(challengeId: string) {
     `)
     .eq("challenge_id", challengeId)
 
-  if (!participants) return { error: "No participants found." }
+  if (!participants) return { success: false, error: "No participants found." }
 
   // 4. Calculate Leaderboard
   const leaderboard = participants.map((p: any) => {
-    // Sum up scores from all evaluated submissions
     const totalScore = p.submissions.reduce((acc: number, sub: any) => {
-      // Assuming one evaluation per submission, taking the first one
       const evalScore = sub.evaluations?.[0]?.score || 0
       return acc + evalScore
     }, 0)
@@ -214,11 +199,9 @@ export async function closeChallenge(challengeId: string) {
     }
   })
 
-  // Sort Descending (Highest Score First)
   leaderboard.sort((a, b) => b.score - a.score)
 
   // 5. Pick Top 3 Winners
-  // We map the top 3 leaderboard entries to winner objects
   const winners = leaderboard.slice(0, 3).map((entry, index) => ({
     challenge_id: challengeId,
     profile_id: entry.profile_id!,
@@ -228,28 +211,30 @@ export async function closeChallenge(challengeId: string) {
 
   // 6. Save Winners to DB
   if (winners.length > 0) {
-    // Clean up any existing winners for this challenge to prevent duplicates
     await supabase.from("winners").delete().eq("challenge_id", challengeId)
     
     const { error: winnerError } = await supabase.from("winners").insert(winners)
     if (winnerError) {
       console.error("Winner save error:", winnerError)
-      return { error: "Failed to save winners." }
+      return { success: false, error: "Failed to save winners." }
     }
   }
 
   // 7. Update Challenge Status to "closed"
   const { error: updateError } = await supabase
     .from("challenges")
-    .update({ status: "closed" as any }) // Type cast if needed
+    .update({ status: "closed" as any })
     .eq("id", challengeId)
 
-  if (updateError) return { error: "Failed to close challenge." }
+  if (updateError) return { success: false, error: "Failed to close challenge." }
 
   // 8. Revalidate Paths
-revalidatePath(`/challenges/${challengeId}`)
-revalidatePath(`/company/challenges/${challengeId}`)
-revalidatePath(`/dashboard`)           // student dashboard
-revalidatePath(`/challenges`)           // student challenge list
-revalidatePath(`/challenges/${challengeId}/results`) // results page
+  revalidatePath(`/challenges/${challengeId}`)
+  revalidatePath(`/company/challenges/${challengeId}`)
+  revalidatePath(`/dashboard`)
+  revalidatePath(`/challenges`)
+  revalidatePath(`/challenges/${challengeId}/results`)
+
+  // 9. Return success
+  return { success: true, error: null }
 }
