@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import type { CSSProperties } from "react"
 import Link from "next/link"
 import {
   Search,
   GraduationCap,
   Trophy,
-  Zap,
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
@@ -21,7 +21,7 @@ interface TalentGridProps {
   students: StudentWithStats[]
 }
 
-const PAGE_SIZE = 9 // 3 cols × 3 rows
+const PAGE_SIZE = 9
 
 const SORT_OPTIONS = [
   { value: "newest",    label: "Newest First" },
@@ -34,7 +34,6 @@ function getInitials(first: string | null, last: string | null): string {
   return `${first?.charAt(0) || ""}${last?.charAt(0) || ""}`.toUpperCase() || "?"
 }
 
-// Deterministic gradient per student (based on name)
 const AVATAR_GRADIENTS = [
   "linear-gradient(135deg, #FF9B87 0%, #E8836F 100%)",
   "linear-gradient(135deg, #2C3E50 0%, #3D5166 100%)",
@@ -57,28 +56,24 @@ export function TalentGrid({ students }: TalentGridProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [page, setPage] = useState(1)
 
-  // ── Filter + Sort ──────────────────────────────────────────────
   const filtered = useMemo(() => {
     let list = [...students]
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter((s) => {
-        const name = `${s.first_name || ""} ${s.last_name || ""}`.toLowerCase()
-        const bio = (s.bio || "").toLowerCase()
-        const uni = (s.university || "").toLowerCase()
+        const name   = `${s.first_name || ""} ${s.last_name || ""}`.toLowerCase()
+        const bio    = (s.bio || "").toLowerCase()
+        const uni    = (s.university || "").toLowerCase()
         const degree = (s.degree || "").toLowerCase()
         return name.includes(q) || bio.includes(q) || uni.includes(q) || degree.includes(q)
       })
     }
 
-    // Experience filter
     if (filterExperience === "experienced") list = list.filter((s) => s.completedChallenges > 0)
-    if (filterExperience === "active") list = list.filter((s) => s.activeChallenges > 0)
-    if (filterExperience === "new") list = list.filter((s) => s.completedChallenges === 0 && s.activeChallenges === 0)
+    if (filterExperience === "active")      list = list.filter((s) => s.activeChallenges > 0)
+    if (filterExperience === "new")         list = list.filter((s) => s.completedChallenges === 0 && s.activeChallenges === 0)
 
-    // Sort
     switch (sortBy) {
       case "name":
         list.sort((a, b) => {
@@ -100,27 +95,19 @@ export function TalentGrid({ students }: TalentGridProps) {
     return list
   }, [students, search, sortBy, filterExperience])
 
-  // ── Pagination ─────────────────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(page, totalPages)
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const safePage   = Math.min(page, totalPages)
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const resetPage  = () => setPage(1)
 
-  const resetPage = () => setPage(1)
-
-  const activeFiltersCount = [
-    filterExperience !== "all" ? 1 : 0,
-  ].reduce((a, b) => a + b, 0)
+  const activeFiltersCount = filterExperience !== "all" ? 1 : 0
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
       {/* ── Toolbar ── */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "0.75rem",
-        flexWrap: "wrap",
-      }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+
         {/* Search */}
         <div className="cp-search-wrapper" style={{ flex: "1", minWidth: "200px", maxWidth: "400px" }}>
           <Search className="cp-search-icon" />
@@ -129,41 +116,46 @@ export function TalentGrid({ students }: TalentGridProps) {
             type="text"
             placeholder="Search by name, school, degree..."
             value={search}
+            aria-label="Search students"
             onChange={(e) => { setSearch(e.target.value); resetPage() }}
           />
         </div>
 
-        {/* Filter toggle */}
-        <button
-          onClick={() => setShowFilters((v) => !v)}
-          className="cp-btn cp-btn-ghost"
-          style={{
-            gap: "0.5rem",
-            borderColor: activeFiltersCount > 0 ? "var(--cp-coral)" : undefined,
-            color: activeFiltersCount > 0 ? "var(--cp-coral-dark)" : undefined,
-          }}
-        >
-          <SlidersHorizontal style={{ width: "1rem", height: "1rem" }} />
-          Filters
-          {activeFiltersCount > 0 && (
-            <span style={{
-              minWidth: "1.25rem", height: "1.25rem", borderRadius: "99px",
-              background: "var(--cp-coral)", color: "white",
-              fontSize: "0.6875rem", fontWeight: 700,
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              padding: "0 0.3rem",
-            }}>
-              {activeFiltersCount}
-            </span>
-          )}
-        </button>
+      {/* Filter toggle */}
+      <button
+        type="button"
+        onClick={() => setShowFilters((v) => !v)}
+        aria-label={showFilters ? "Hide filters" : "Show filters"}
+        className="cp-btn cp-btn-ghost"
+        style={{
+          gap: "0.5rem",
+          borderColor: activeFiltersCount > 0 ? "var(--cp-coral)"      : undefined,
+          color:       activeFiltersCount > 0 ? "var(--cp-coral-dark)" : undefined,
+        } as CSSProperties}
+      >
+        <SlidersHorizontal style={{ width: "1rem", height: "1rem" }} />
+        Filters
+        {activeFiltersCount > 0 && (
+          <span style={{
+            minWidth: "1.25rem", height: "1.25rem", borderRadius: "99px",
+            background: "var(--cp-coral)", color: "white",
+            fontSize: "0.6875rem", fontWeight: 700,
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            padding: "0 0.3rem",
+          }}>
+            {activeFiltersCount}
+          </span>
+        )}
+      </button>
 
         {/* Sort */}
+        <label htmlFor="talent-sort" style={{ display: "none" }}>Sort students</label>
         <select
+          id="talent-sort"
           value={sortBy}
           onChange={(e) => { setSortBy(e.target.value); resetPage() }}
           className="cp-input"
-          style={{ width: "auto", minWidth: "160px", padding: "0.5rem 0.875rem" }}
+          style={{ width: "auto", minWidth: "160px", padding: "0.5rem 0.875rem" } as CSSProperties}
         >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -183,12 +175,14 @@ export function TalentGrid({ students }: TalentGridProps) {
             <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--cp-navy)" }}>Filter By</p>
             {activeFiltersCount > 0 && (
               <button
+                type="button"
                 onClick={() => { setFilterExperience("all"); resetPage() }}
+                aria-label="Clear all filters"
                 style={{
                   fontSize: "0.75rem", color: "var(--cp-coral-dark)", fontWeight: 600,
-                  background: "none", border: "none", cursor: "pointer",
+                  background: "none", border: "none", cursor: "pointer" as CSSProperties["cursor"],
                   display: "flex", alignItems: "center", gap: "0.25rem",
-                }}
+                } as CSSProperties}
               >
                 <X style={{ width: "0.75rem", height: "0.75rem" }} /> Clear all
               </button>
@@ -196,35 +190,45 @@ export function TalentGrid({ students }: TalentGridProps) {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <p style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--cp-text-muted)" }}>
+            <p style={{
+              fontSize: "0.75rem", fontWeight: 700,
+              textTransform: "uppercase", letterSpacing: "0.07em",
+              color: "var(--cp-text-muted)",
+            }}>
               Experience Level
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {[
-                { value: "all",         label: "All Students" },
-                { value: "experienced", label: "Has Completed Challenges" },
-                { value: "active",      label: "Currently Active" },
-                { value: "new",         label: "New / No Challenges" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setFilterExperience(opt.value as any); resetPage() }}
-                  style={{
-                    padding: "0.375rem 0.875rem",
-                    borderRadius: "99px",
-                    fontSize: "0.8125rem",
-                    fontWeight: 600,
-                    border: "1.5px solid",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    borderColor: filterExperience === opt.value ? "var(--cp-coral)" : "var(--cp-border-strong)",
-                    background: filterExperience === opt.value ? "var(--cp-coral-muted)" : "transparent",
-                    color: filterExperience === opt.value ? "var(--cp-coral-dark)" : "var(--cp-text-secondary)",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {(["all", "experienced", "active", "new"] as const).map((val) => {
+                const labels: Record<typeof val, string> = {
+                  all:         "All Students",
+                  experienced: "Has Completed Challenges",
+                  active:      "Currently Active",
+                  new:         "New / No Challenges",
+                }
+                const isActive = filterExperience === val
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => { setFilterExperience(val); resetPage() }}
+                    aria-label={`${labels[val]}${isActive ? ", selected" : ""}`}
+                    style={{
+                      padding: "0.375rem 0.875rem",
+                      borderRadius: "99px",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      border: "1.5px solid",
+                      cursor: "pointer" as CSSProperties["cursor"],
+                      transition: "all 0.15s ease",
+                      borderColor: isActive ? "var(--cp-coral)"       : "var(--cp-border-strong)",
+                      background:  isActive ? "var(--cp-coral-muted)" : "transparent",
+                      color:       isActive ? "var(--cp-coral-dark)"  : "var(--cp-text-secondary)",
+                    } as CSSProperties}
+                  >
+                    {labels[val]}
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -239,9 +243,12 @@ export function TalentGrid({ students }: TalentGridProps) {
             </div>
             <p className="cp-empty-title">No students found</p>
             <p className="cp-empty-desc">
-              {search ? `No results for "${search}". Try a different search term.` : "No students match your current filters."}
+              {search
+                ? `No results for "${search}". Try a different search term.`
+                : "No students match your current filters."}
             </p>
             <button
+              type="button"
               onClick={() => { setSearch(""); setFilterExperience("all"); resetPage() }}
               className="cp-btn cp-btn-outline"
             >
@@ -250,18 +257,15 @@ export function TalentGrid({ students }: TalentGridProps) {
           </div>
         </div>
       ) : (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "1rem",
-        }}
+        <div
           className="talent-grid"
+          style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}
         >
           {paginated.map((student) => {
-            const name = `${student.first_name || ""} ${student.last_name || ""}`.trim() || "Student"
-            const initials = getInitials(student.first_name, student.last_name)
-            const gradient = avatarGradient(name)
-            const headline = [student.degree, student.university].filter(Boolean).join(" · ")
+            const name          = `${student.first_name || ""} ${student.last_name || ""}`.trim() || "Student"
+            const initials      = getInitials(student.first_name, student.last_name)
+            const gradient      = avatarGradient(name)
+            const headline      = [student.degree, student.university].filter(Boolean).join(" · ")
             const hasExperience = student.completedChallenges > 0
 
             return (
@@ -279,24 +283,24 @@ export function TalentGrid({ students }: TalentGridProps) {
                 }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget
-                  el.style.transform = "translateY(-3px)"
-                  el.style.boxShadow = "var(--cp-shadow-md)"
+                  el.style.transform   = "translateY(-3px)"
+                  el.style.boxShadow   = "var(--cp-shadow-md)"
                   el.style.borderColor = "rgba(255,155,135,0.35)"
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget
-                  el.style.transform = "translateY(0)"
-                  el.style.boxShadow = "var(--cp-shadow-sm)"
+                  el.style.transform   = "translateY(0)"
+                  el.style.boxShadow   = "var(--cp-shadow-sm)"
                   el.style.borderColor = "var(--cp-border)"
                 }}
               >
-                {/* Card top accent strip */}
+                {/* Accent strip */}
                 <div style={{ height: "4px", background: gradient }} />
 
-                {/* Card body */}
+                {/* Body */}
                 <div style={{ padding: "1.25rem", flex: 1, display: "flex", flexDirection: "column", gap: "1rem" }}>
 
-                  {/* Avatar + Name row */}
+                  {/* Avatar + Name */}
                   <div style={{ display: "flex", alignItems: "center", gap: "0.875rem" }}>
                     {student.avatar_url ? (
                       <img
@@ -304,67 +308,51 @@ export function TalentGrid({ students }: TalentGridProps) {
                         alt={name}
                         style={{
                           width: "3rem", height: "3rem",
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          flexShrink: 0,
-                          border: "2px solid var(--cp-border)",
+                          borderRadius: "50%", objectFit: "cover",
+                          flexShrink: 0, border: "2px solid var(--cp-border)",
                         }}
                       />
                     ) : (
-                      <div style={{
-                        width: "3rem", height: "3rem",
-                        borderRadius: "50%",
-                        background: gradient,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: "white",
-                        fontWeight: 800,
-                        fontSize: "1rem",
-                        flexShrink: 0,
-                        letterSpacing: "-0.02em",
-                      }}>
+                      <div
+                        aria-hidden="true"
+                        style={{
+                          width: "3rem", height: "3rem",
+                          borderRadius: "50%", background: gradient,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: "white", fontWeight: 800, fontSize: "1rem",
+                          flexShrink: 0, letterSpacing: "-0.02em",
+                        }}
+                      >
                         {initials}
                       </div>
                     )}
 
                     <div style={{ overflow: "hidden", flex: 1 }}>
                       <p style={{
-                        fontWeight: 700,
-                        fontSize: "0.9375rem",
-                        color: "var(--cp-navy)",
-                        letterSpacing: "-0.01em",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        fontWeight: 700, fontSize: "0.9375rem",
+                        color: "var(--cp-navy)", letterSpacing: "-0.01em",
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                       }}>
                         {name}
                       </p>
                       {headline && (
                         <p style={{
-                          fontSize: "0.75rem",
-                          color: "var(--cp-text-muted)",
+                          fontSize: "0.75rem", color: "var(--cp-text-muted)",
                           marginTop: "0.125rem",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                         }}>
                           {headline}
                         </p>
                       )}
                     </div>
 
-                    {/* Experience badge */}
                     {hasExperience && (
                       <span style={{
                         flexShrink: 0,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.25rem",
-                        padding: "0.2rem 0.5rem",
-                        borderRadius: "99px",
-                        background: "rgba(34,197,94,0.10)",
-                        color: "#166534",
-                        fontSize: "0.6875rem",
-                        fontWeight: 700,
+                        display: "inline-flex", alignItems: "center", gap: "0.25rem",
+                        padding: "0.2rem 0.5rem", borderRadius: "99px",
+                        background: "rgba(34,197,94,0.10)", color: "#166534",
+                        fontSize: "0.6875rem", fontWeight: 700,
                       }}>
                         <Trophy style={{ width: "0.625rem", height: "0.625rem" }} />
                         Verified
@@ -375,8 +363,7 @@ export function TalentGrid({ students }: TalentGridProps) {
                   {/* Bio */}
                   {student.bio && (
                     <p style={{
-                      fontSize: "0.8125rem",
-                      color: "var(--cp-text-secondary)",
+                      fontSize: "0.8125rem", color: "var(--cp-text-secondary)",
                       lineHeight: 1.6,
                       display: "-webkit-box",
                       WebkitLineClamp: 2,
@@ -387,17 +374,12 @@ export function TalentGrid({ students }: TalentGridProps) {
                     </p>
                   )}
 
-                  {/* Stats row */}
-                  <div style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                  }}>
+                  {/* Stats */}
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
                     <div style={{
-                      flex: 1,
-                      background: "var(--cp-surface)",
+                      flex: 1, background: "var(--cp-surface)",
                       borderRadius: "var(--cp-radius-md, 12px)",
-                      padding: "0.625rem 0.75rem",
-                      textAlign: "center",
+                      padding: "0.625rem 0.75rem", textAlign: "center",
                     }}>
                       <p style={{ fontWeight: 800, fontSize: "1.125rem", color: "var(--cp-coral-dark)", letterSpacing: "-0.03em", lineHeight: 1 }}>
                         {student.completedChallenges}
@@ -407,11 +389,9 @@ export function TalentGrid({ students }: TalentGridProps) {
                       </p>
                     </div>
                     <div style={{
-                      flex: 1,
-                      background: "var(--cp-surface)",
+                      flex: 1, background: "var(--cp-surface)",
                       borderRadius: "var(--cp-radius-md, 12px)",
-                      padding: "0.625rem 0.75rem",
-                      textAlign: "center",
+                      padding: "0.625rem 0.75rem", textAlign: "center",
                     }}>
                       <p style={{ fontWeight: 800, fontSize: "1.125rem", color: "var(--cp-navy)", letterSpacing: "-0.03em", lineHeight: 1 }}>
                         {student.activeChallenges}
@@ -422,11 +402,9 @@ export function TalentGrid({ students }: TalentGridProps) {
                     </div>
                     {student.graduation_year && (
                       <div style={{
-                        flex: 1,
-                        background: "var(--cp-surface)",
+                        flex: 1, background: "var(--cp-surface)",
                         borderRadius: "var(--cp-radius-md, 12px)",
-                        padding: "0.625rem 0.75rem",
-                        textAlign: "center",
+                        padding: "0.625rem 0.75rem", textAlign: "center",
                       }}>
                         <p style={{ fontWeight: 800, fontSize: "1.125rem", color: "var(--cp-navy)", letterSpacing: "-0.03em", lineHeight: 1 }}>
                           {student.graduation_year}
@@ -445,8 +423,7 @@ export function TalentGrid({ students }: TalentGridProps) {
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: "0.3rem",
                           padding: "0.25rem 0.625rem",
-                          background: "var(--cp-navy-muted)",
-                          color: "var(--cp-navy)",
+                          background: "var(--cp-navy-muted)", color: "var(--cp-navy)",
                           borderRadius: "var(--cp-radius-sm, 8px)",
                           fontSize: "0.72rem", fontWeight: 600,
                         }}>
@@ -458,8 +435,7 @@ export function TalentGrid({ students }: TalentGridProps) {
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: "0.3rem",
                           padding: "0.25rem 0.625rem",
-                          background: "var(--cp-coral-muted)",
-                          color: "var(--cp-coral-dark)",
+                          background: "var(--cp-coral-muted)", color: "var(--cp-coral-dark)",
                           borderRadius: "var(--cp-radius-sm, 8px)",
                           fontSize: "0.72rem", fontWeight: 600,
                         }}>
@@ -470,7 +446,6 @@ export function TalentGrid({ students }: TalentGridProps) {
                     </div>
                   )}
 
-                  {/* Spacer */}
                   <div style={{ flex: 1 }} />
 
                   {/* Actions */}
@@ -486,7 +461,7 @@ export function TalentGrid({ students }: TalentGridProps) {
                     <Link
                       href={`/company/messages?student=${student.id}`}
                       className="cp-btn cp-btn-ghost cp-btn-sm cp-btn-icon"
-                      title="Message"
+                      aria-label={`Message ${name}`}
                     >
                       <MessageCircle style={{ width: "0.875rem", height: "0.875rem" }} />
                     </Link>
@@ -501,12 +476,8 @@ export function TalentGrid({ students }: TalentGridProps) {
       {/* ── Pagination ── */}
       {totalPages > 1 && (
         <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0.75rem 0",
-          gap: "1rem",
-          flexWrap: "wrap",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0.75rem 0", gap: "1rem", flexWrap: "wrap",
         }}>
           <p style={{ fontSize: "0.8125rem", color: "var(--cp-text-muted)" }}>
             Showing{" "}
@@ -520,10 +491,15 @@ export function TalentGrid({ students }: TalentGridProps) {
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
             <button
+              type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
+              aria-label="Previous page"
               className="cp-btn cp-btn-ghost cp-btn-sm cp-btn-icon"
-              style={{ opacity: safePage === 1 ? 0.4 : 1, cursor: safePage === 1 ? "not-allowed" : "pointer" }}
+              style={{
+                opacity: safePage === 1 ? 0.4 : 1,
+                cursor: (safePage === 1 ? "not-allowed" : "pointer") as CSSProperties["cursor"],
+              }}
             >
               <ChevronLeft style={{ width: "1rem", height: "1rem" }} />
             </button>
@@ -544,22 +520,31 @@ export function TalentGrid({ students }: TalentGridProps) {
               }, [])
               .map((p, idx) =>
                 p === "…" ? (
-                  <span key={`ellipsis-${idx}`} style={{ padding: "0 0.25rem", color: "var(--cp-text-muted)", fontSize: "0.875rem" }}>…</span>
+                  <span
+                    key={`ellipsis-${idx}`}
+                    style={{ padding: "0 0.25rem", color: "var(--cp-text-muted)", fontSize: "0.875rem" }}
+                  >
+                    …
+                  </span>
                 ) : (
                   <button
                     key={p}
+                    type="button"
                     onClick={() => setPage(p as number)}
+                    aria-label={`Page ${p}`}
+                    aria-current={safePage === p ? "page" : undefined}
                     style={{
                       minWidth: "2rem", height: "2rem",
                       padding: "0 0.5rem",
                       borderRadius: "var(--cp-radius-md, 12px)",
                       fontSize: "0.8125rem", fontWeight: 600,
-                      border: "none", cursor: "pointer",
+                      border: "none",
+                      cursor: "pointer" as CSSProperties["cursor"],
                       transition: "all 0.15s ease",
-                      background: safePage === p ? "var(--cp-coral)" : "transparent",
-                      color: safePage === p ? "white" : "var(--cp-text-secondary)",
-                      boxShadow: safePage === p ? "0 2px 8px rgba(255,155,135,0.4)" : "none",
-                    }}
+                      background: safePage === p ? "var(--cp-coral)"  : "transparent",
+                      color:      safePage === p ? "white"            : "var(--cp-text-secondary)",
+                      boxShadow:  safePage === p ? "0 2px 8px rgba(255,155,135,0.4)" : "none",
+                    } as CSSProperties}
                   >
                     {p}
                   </button>
@@ -567,10 +552,15 @@ export function TalentGrid({ students }: TalentGridProps) {
               )}
 
             <button
+              type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
+              aria-label="Next page"
               className="cp-btn cp-btn-ghost cp-btn-sm cp-btn-icon"
-              style={{ opacity: safePage === totalPages ? 0.4 : 1, cursor: safePage === totalPages ? "not-allowed" : "pointer" }}
+              style={{
+                opacity: safePage === totalPages ? 0.4 : 1,
+                cursor: (safePage === totalPages ? "not-allowed" : "pointer") as CSSProperties["cursor"],
+              }}
             >
               <ChevronRight style={{ width: "1rem", height: "1rem" }} />
             </button>
@@ -578,14 +568,9 @@ export function TalentGrid({ students }: TalentGridProps) {
         </div>
       )}
 
-      {/* Responsive grid CSS */}
       <style>{`
-        @media (max-width: 1024px) {
-          .talent-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        }
-        @media (max-width: 640px) {
-          .talent-grid { grid-template-columns: 1fr !important; }
-        }
+        @media (max-width: 1024px) { .talent-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+        @media (max-width: 640px)  { .talent-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </div>
   )
