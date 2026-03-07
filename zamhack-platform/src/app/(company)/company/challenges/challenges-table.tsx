@@ -167,7 +167,6 @@ export function ChallengesTable({ challenges }: ChallengesTableProps) {
                   fontSize: "0.8125rem",
                   fontWeight: 600,
                   color: isActive ? "var(--cp-coral-dark)" : "var(--cp-text-muted)",
-                  // ✅ FIX: avoid mixing border shorthand with borderBottom
                   borderTop: "none",
                   borderLeft: "none",
                   borderRight: "none",
@@ -240,6 +239,7 @@ export function ChallengesTable({ challenges }: ChallengesTableProps) {
                 <th style={{ minWidth: 220 }}>
                   <button
                     onClick={() => toggleSort("title")}
+                    aria-label="Sort by challenge title"
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -265,6 +265,7 @@ export function ChallengesTable({ challenges }: ChallengesTableProps) {
                 <th>
                   <button
                     onClick={() => toggleSort("participantCount")}
+                    aria-label="Sort by participant count"
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -401,10 +402,11 @@ export function ChallengesTable({ challenges }: ChallengesTableProps) {
                       >
                         Manage
                       </Link>
+                      {/* FIX: added aria-label so screen readers can identify this icon-only button */}
                       <Link
                         href={`/company/challenges/${challenge.id}`}
                         className="cp-btn cp-btn-ghost cp-btn-sm cp-btn-icon"
-                        title="Open"
+                        aria-label={`Open ${challenge.title}`}
                       >
                         <ExternalLink style={{ width: "0.875rem", height: "0.875rem" }} />
                       </Link>
@@ -439,9 +441,11 @@ export function ChallengesTable({ challenges }: ChallengesTableProps) {
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+            {/* FIX: added aria-label so screen readers can identify these icon-only buttons */}
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
+              aria-label="Go to previous page"
               className="cp-btn cp-btn-ghost cp-btn-sm cp-btn-icon"
               style={{ opacity: safePage === 1 ? 0.4 : 1, cursor: safePage === 1 ? "not-allowed" : "pointer" }}
             >
@@ -471,6 +475,8 @@ export function ChallengesTable({ challenges }: ChallengesTableProps) {
                   <button
                     key={p}
                     onClick={() => setPage(p as number)}
+                    aria-label={`Go to page ${p}`}
+                    aria-current={safePage === p ? "page" : undefined}
                     style={{
                       minWidth: "2rem",
                       height: "2rem",
@@ -491,9 +497,11 @@ export function ChallengesTable({ challenges }: ChallengesTableProps) {
                 )
               )}
 
+            {/* FIX: added aria-label so screen readers can identify these icon-only buttons */}
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
+              aria-label="Go to next page"
               className="cp-btn cp-btn-ghost cp-btn-sm cp-btn-icon"
               style={{ opacity: safePage === totalPages ? 0.4 : 1, cursor: safePage === totalPages ? "not-allowed" : "pointer" }}
             >

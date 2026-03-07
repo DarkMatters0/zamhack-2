@@ -4,14 +4,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Trophy, Ribbon, ArrowLeft, Star } from "lucide-react"
+import { Trophy, Medal, Award, ArrowLeft, Star } from "lucide-react"
 import Link from "next/link"
 
 // Define the exact shape of our joined data to satisfy TypeScript
 interface WinnerData {
   rank: number
   prize: string | null
-  profile_id: string  // added: needed to match with participant scores
+  profile_id: string // needed to match with participant scores
   profile: {
     first_name: string | null
     last_name: string | null
@@ -55,7 +55,9 @@ export default async function ChallengeResultsPage({
         </div>
         <h1 className="text-2xl font-bold">Results Pending</h1>
         <p className="text-muted-foreground max-w-md">
-          The winners for <span className="font-semibold">{challenge.title}</span> have not been announced yet.
+          The winners for{" "}
+          <span className="font-semibold">{challenge.title}</span> have not
+          been announced yet.
         </p>
         <Button asChild variant="outline">
           <Link href={`/challenges/${id}`}>Back to Challenge</Link>
@@ -64,7 +66,7 @@ export default async function ChallengeResultsPage({
     )
   }
 
-  // 2. Fetch Winners — added profile_id to select so we can match scores below
+  // 2. Fetch Winners — include profile_id so we can match scores below
   const { data } = await supabase
     .from("winners")
     .select(`
@@ -78,7 +80,7 @@ export default async function ChallengeResultsPage({
 
   const winners = data as unknown as WinnerData[] | null
 
-  // 3. Fetch all participants + compute their total score from evaluations
+  // 3. Fetch all participants and compute their total score from evaluations
   const { data: participantsRaw } = await supabase
     .from("challenge_participants")
     .select(`
@@ -90,11 +92,16 @@ export default async function ChallengeResultsPage({
     `)
     .eq("challenge_id", id)
 
-  const allParticipants: ParticipantScore[] = ((participantsRaw ?? []) as any[])
+  const allParticipants: ParticipantScore[] = (
+    (participantsRaw ?? []) as any[]
+  )
     .map((p) => {
-      const totalScore = (p.submissions ?? []).reduce((acc: number, sub: any) => {
-        return acc + (sub.evaluations?.[0]?.score ?? 0)
-      }, 0)
+      const totalScore = (p.submissions ?? []).reduce(
+        (acc: number, sub: any) => {
+          return acc + (sub.evaluations?.[0]?.score ?? 0)
+        },
+        0
+      )
       return {
         user_id: p.user_id,
         first_name: p.profile?.first_name ?? null,
@@ -106,54 +113,59 @@ export default async function ChallengeResultsPage({
     })
     .sort((a, b) => b.totalScore - a.totalScore)
 
-  // Attach computed score to each winner card
+  // Attach computed score to each winner for the podium display
   const winnersWithScore = (winners ?? []).map((w) => ({
     ...w,
-    totalScore: allParticipants.find((p) => p.user_id === w.profile_id)?.totalScore ?? 0,
+    totalScore:
+      allParticipants.find((p) => p.user_id === w.profile_id)?.totalScore ?? 0,
   }))
 
   const getRankConfig = (rank: number) => {
     switch (rank) {
-      case 1: return {
-        color: "text-yellow-600",
-        bg: "bg-gradient-to-b from-yellow-50 to-yellow-100/60 border-yellow-200",
-        iconColor: "text-yellow-500",
-        icon: Trophy,
-        badgeBg: "bg-black/90 text-white hover:bg-black/80",
-        heightClass: "md:min-h-[22rem]",
-        scale: "scale-105 z-10",
-        scoreColor: "text-yellow-700",
-      }
-      case 2: return {
-        color: "text-slate-600",
-        bg: "bg-gradient-to-b from-slate-50 to-slate-100/60 border-slate-200",
-        iconColor: "text-slate-400",
-        icon: Ribbon,
-        badgeBg: "bg-black/90 text-white hover:bg-black/80",
-        heightClass: "md:min-h-[19rem]",
-        scale: "scale-100",
-        scoreColor: "text-slate-600",
-      }
-      case 3: return {
-        color: "text-amber-700",
-        bg: "bg-gradient-to-b from-orange-50 to-orange-100/60 border-orange-200",
-        iconColor: "text-amber-600",
-        icon: Ribbon,
-        badgeBg: "bg-black/90 text-white hover:bg-black/80",
-        heightClass: "md:min-h-[17rem]",
-        scale: "scale-100",
-        scoreColor: "text-amber-700",
-      }
-      default: return {
-        color: "text-blue-600",
-        bg: "bg-card",
-        iconColor: "text-blue-600",
-        icon: Star,
-        badgeBg: "bg-black/90 text-white hover:bg-black/80",
-        heightClass: "h-auto",
-        scale: "",
-        scoreColor: "text-muted-foreground",
-      }
+      case 1:
+        return {
+          color: "text-yellow-600",
+          bg: "bg-gradient-to-b from-yellow-50 to-yellow-100/60 border-yellow-200",
+          iconColor: "text-yellow-500",
+          icon: Trophy,
+          badgeBg: "bg-black/90 text-white hover:bg-black/80",
+          heightClass: "md:min-h-[22rem]",
+          scale: "scale-105 z-10",
+          scoreColor: "text-yellow-700",
+        }
+      case 2:
+        return {
+          color: "text-slate-600",
+          bg: "bg-gradient-to-b from-slate-50 to-slate-100/60 border-slate-200",
+          iconColor: "text-slate-400",
+          icon: Medal, // FIX: was Ribbon, which doesn't exist in lucide-react
+          badgeBg: "bg-black/90 text-white hover:bg-black/80",
+          heightClass: "md:min-h-[19rem]",
+          scale: "scale-100",
+          scoreColor: "text-slate-600",
+        }
+      case 3:
+        return {
+          color: "text-amber-700",
+          bg: "bg-gradient-to-b from-orange-50 to-orange-100/60 border-orange-200",
+          iconColor: "text-amber-600",
+          icon: Award, // FIX: was Ribbon, which doesn't exist in lucide-react
+          badgeBg: "bg-black/90 text-white hover:bg-black/80",
+          heightClass: "md:min-h-[17rem]",
+          scale: "scale-100",
+          scoreColor: "text-amber-700",
+        }
+      default:
+        return {
+          color: "text-blue-600",
+          bg: "bg-card",
+          iconColor: "text-blue-600",
+          icon: Star,
+          badgeBg: "bg-black/90 text-white hover:bg-black/80",
+          heightClass: "h-auto",
+          scale: "",
+          scoreColor: "text-muted-foreground",
+        }
     }
   }
 
@@ -161,12 +173,14 @@ export default async function ChallengeResultsPage({
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-20">
       <div className="container max-w-4xl py-12 px-4 mx-auto">
         <Button variant="ghost" asChild className="mb-8">
-          <Link href={`/challenges/${id}`}><ArrowLeft className="mr-2 h-4 w-4" /> Back to Challenge</Link>
+          <Link href={`/challenges/${id}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Challenge
+          </Link>
         </Button>
 
         {/* Hero header */}
         <div className="text-center mb-16 space-y-2">
-          {/* Glowing trophy accent above title */}
+          {/* Glowing trophy accent */}
           <div className="flex justify-center mb-3">
             <div className="relative">
               <div className="absolute -inset-3 rounded-full bg-yellow-100 opacity-60 blur-md" />
@@ -174,10 +188,20 @@ export default async function ChallengeResultsPage({
             </div>
           </div>
 
-          <Badge variant="outline" className="mb-2 border-primary/20 text-primary bg-primary/5">Official Results</Badge>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Winners Announced</h1>
+          <Badge
+            variant="outline"
+            className="mb-2 border-primary/20 text-primary bg-primary/5"
+          >
+            Official Results
+          </Badge>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+            Winners Announced
+          </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Celebrating the top innovators for <span className="text-foreground font-semibold">{challenge.title}</span>
+            Celebrating the top innovators for{" "}
+            <span className="text-foreground font-semibold">
+              {challenge.title}
+            </span>
           </p>
 
           {/* Decorative divider */}
@@ -208,13 +232,17 @@ export default async function ChallengeResultsPage({
                 `}
               >
                 {/* Rank number watermark */}
-                <span className={`absolute bottom-4 right-5 text-7xl font-black opacity-[0.07] select-none leading-none ${config.color}`}>
+                <span
+                  className={`absolute bottom-4 right-5 text-7xl font-black opacity-[0.07] select-none leading-none ${config.color}`}
+                >
                   {rank}
                 </span>
 
                 <div className="pt-8 flex flex-col items-center w-full px-4">
                   {/* Icon */}
-                  <div className={`p-3 rounded-full bg-white shadow-sm mb-4 ${config.iconColor}`}>
+                  <div
+                    className={`p-3 rounded-full bg-white shadow-sm mb-4 ${config.iconColor}`}
+                  >
                     <Icon className="h-8 w-8" />
                   </div>
 
@@ -233,9 +261,13 @@ export default async function ChallengeResultsPage({
                   </p>
 
                   {/* Total score */}
-                  <div className={`mt-3 text-2xl font-extrabold ${config.scoreColor}`}>
+                  <div
+                    className={`mt-3 text-2xl font-extrabold ${config.scoreColor}`}
+                  >
                     {winner.totalScore}
-                    <span className="text-xs font-medium text-muted-foreground ml-1">pts</span>
+                    <span className="text-xs font-medium text-muted-foreground ml-1">
+                      pts
+                    </span>
                   </div>
                 </div>
 
@@ -258,7 +290,8 @@ export default async function ChallengeResultsPage({
               <h2 className="text-lg font-bold">Full Leaderboard</h2>
               <div className="flex-1 h-px bg-border" />
               <span className="text-sm text-muted-foreground">
-                {allParticipants.length} participant{allParticipants.length !== 1 ? "s" : ""}
+                {allParticipants.length} participant
+                {allParticipants.length !== 1 ? "s" : ""}
               </span>
             </div>
 
@@ -267,10 +300,18 @@ export default async function ChallengeResultsPage({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/40">
-                      <th className="text-left font-semibold text-muted-foreground px-5 py-3 w-12">#</th>
-                      <th className="text-left font-semibold text-muted-foreground px-4 py-3">Participant</th>
-                      <th className="text-left font-semibold text-muted-foreground px-4 py-3 hidden sm:table-cell">University</th>
-                      <th className="text-right font-semibold text-muted-foreground px-5 py-3">Score</th>
+                      <th className="text-left font-semibold text-muted-foreground px-5 py-3 w-12">
+                        #
+                      </th>
+                      <th className="text-left font-semibold text-muted-foreground px-4 py-3">
+                        Participant
+                      </th>
+                      <th className="text-left font-semibold text-muted-foreground px-4 py-3 hidden sm:table-cell">
+                        University
+                      </th>
+                      <th className="text-right font-semibold text-muted-foreground px-5 py-3">
+                        Score
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -281,20 +322,28 @@ export default async function ChallengeResultsPage({
                       return (
                         <tr
                           key={p.user_id}
-                          className={`border-b last:border-0 transition-colors hover:bg-muted/30 ${isTop3 ? "bg-muted/10" : ""}`}
+                          className={`border-b last:border-0 transition-colors hover:bg-muted/30 ${
+                            isTop3 ? "bg-muted/10" : ""
+                          }`}
                         >
                           {/* Rank badge */}
                           <td className="px-5 py-3 w-12">
                             {isTop3 ? (
-                              <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold ${
-                                position === 1 ? "bg-yellow-100 text-yellow-700"
-                                : position === 2 ? "bg-slate-100 text-slate-600"
-                                : "bg-orange-100 text-amber-700"
-                              }`}>
+                              <span
+                                className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold ${
+                                  position === 1
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : position === 2
+                                    ? "bg-slate-100 text-slate-600"
+                                    : "bg-orange-100 text-amber-700"
+                                }`}
+                              >
                                 {position}
                               </span>
                             ) : (
-                              <span className="text-xs text-muted-foreground/60 font-mono">{position}</span>
+                              <span className="text-xs text-muted-foreground/60 font-mono">
+                                {position}
+                              </span>
                             )}
                           </td>
 
@@ -302,12 +351,16 @@ export default async function ChallengeResultsPage({
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <Avatar className="h-8 w-8 border border-border">
-                                <AvatarImage src={p.avatar_url || undefined} />
+                                <AvatarImage
+                                  src={p.avatar_url || undefined}
+                                />
                                 <AvatarFallback className="text-xs bg-muted font-semibold">
                                   {p.first_name?.[0] ?? "U"}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{p.first_name} {p.last_name}</span>
+                              <span className="font-medium">
+                                {p.first_name} {p.last_name}
+                              </span>
                             </div>
                           </td>
 
@@ -318,10 +371,18 @@ export default async function ChallengeResultsPage({
 
                           {/* Score */}
                           <td className="px-5 py-3 text-right">
-                            <span className={`font-bold tabular-nums ${isTop3 ? "text-foreground" : "text-muted-foreground"}`}>
+                            <span
+                              className={`font-bold tabular-nums ${
+                                isTop3
+                                  ? "text-foreground"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
                               {p.totalScore}
                             </span>
-                            <span className="text-xs text-muted-foreground ml-1">pts</span>
+                            <span className="text-xs text-muted-foreground ml-1">
+                              pts
+                            </span>
                           </td>
                         </tr>
                       )

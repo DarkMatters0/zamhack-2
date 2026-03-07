@@ -101,14 +101,17 @@ export default function ProfileForm({ profile, email }: ProfileFormProps) {
 
               {/* Email (read-only) */}
               <div className="cp-form-group" style={{ marginBottom: 0 }}>
-                <label className="cp-label">
+                {/* FIX: added htmlFor="email" so the label is programmatically associated with the input */}
+                <label htmlFor="email" className="cp-label">
                   <span style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                     <Mail style={{ width: "0.8125rem", height: "0.8125rem" }} />
                     Email Address
                   </span>
                 </label>
                 <div style={{ position: "relative" }}>
+                  {/* FIX: added id="email" to match the label's htmlFor */}
                   <input
+                    id="email"
                     className="cp-input"
                     value={email}
                     disabled
@@ -234,9 +237,11 @@ export default function ProfileForm({ profile, email }: ProfileFormProps) {
                     required
                     minLength={6}
                   />
+                  {/* FIX: added aria-label so screen readers can identify this icon-only toggle */}
                   <button
                     type="button"
                     onClick={() => setShowNewPw(!showNewPw)}
+                    aria-label={showNewPw ? "Hide new password" : "Show new password"}
                     style={{
                       position: "absolute", right: "0.75rem", top: "50%",
                       transform: "translateY(-50%)", background: "none", border: "none",
@@ -270,9 +275,11 @@ export default function ProfileForm({ profile, email }: ProfileFormProps) {
                     onChange={(e) => setConfirmPasswordVal(e.target.value)}
                     required
                   />
+                  {/* FIX: added aria-label so screen readers can identify this icon-only toggle */}
                   <button
                     type="button"
                     onClick={() => setShowConfirmPw(!showConfirmPw)}
+                    aria-label={showConfirmPw ? "Hide confirm password" : "Show confirm password"}
                     style={{
                       position: "absolute", right: "0.75rem", top: "50%",
                       transform: "translateY(-50%)", background: "none", border: "none",
