@@ -107,7 +107,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               Accepted Payment Methods
             </p>
             <div className="flex justify-center gap-3 flex-wrap">
-              {["GCash", "Maya", "Card", "QR Ph"].map((method) => (
+              {["GCash", "PayMaya", "Card", "QR Ph"].map((method) => (
                 <span
                   key={method}
                   className="text-xs px-3 py-1 bg-muted rounded-full font-medium"

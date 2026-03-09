@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
                   quantity: 1,
                 },
               ],
-              payment_method_types: ["card", "gcash", "maya", "qrph"],
+              payment_method_types: ["card", "gcash", "paymaya", "qrph"],
               success_url: successUrl,
               cancel_url: cancelUrl,
               // Pass metadata so our webhook knows which challenge + user this is for
