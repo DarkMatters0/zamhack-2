@@ -73,17 +73,44 @@ export function TopSkillsChart({ data }: { data: TopSkill[] }) {
 
 export function ChallengeComparisonChart({ data }: { data: ChallengePerf[] }) {
   if (!data.length) return <Empty label="No challenge data yet" />
-  const formatted = data.map(d => ({ ...d, title: truncate(d.title, 18) }))
+
+  // Cap at 10 most active (by participants) so the chart stays readable
+  const top = [...data]
+    .sort((a, b) => b.participants - a.participants)
+    .slice(0, 10)
+    .map(d => ({ ...d, title: truncate(d.title, 22) }))
+
+  const chartHeight = Math.max(220, top.length * 48)
+
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={formatted} margin={{ left: 8, right: 24, top: 4, bottom: 40 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(44,62,80,0.08)" />
-        <XAxis dataKey="title" tick={{ ...chartStyle, fill: "#4A6072" }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-        <YAxis tick={chartStyle} axisLine={false} tickLine={false} allowDecimals={false} />
+    <ResponsiveContainer width="100%" height={chartHeight}>
+      <BarChart
+        data={top}
+        layout="vertical"
+        margin={{ left: 8, right: 32, top: 4, bottom: 4 }}
+        barCategoryGap="28%"
+        barGap={4}
+      >
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(44,62,80,0.08)" />
+        <XAxis
+          type="number"
+          tick={chartStyle}
+          axisLine={false}
+          tickLine={false}
+          allowDecimals={false}
+        />
+        <YAxis
+          type="category"
+          dataKey="title"
+          width={150}
+          tick={{ ...chartStyle, fill: "#4A6072" }}
+          axisLine={false}
+          tickLine={false}
+        />
         <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(44,62,80,0.04)" }} />
-        <Legend wrapperStyle={{ paddingTop: 8, fontSize: 12 }} />
-        <Bar dataKey="participants"   name="Participants"   fill={NAVY}  radius={[4,4,0,0]} maxBarSize={32} />
-        <Bar dataKey="submissions"    name="Submissions"    fill={CORAL} radius={[4,4,0,0]} maxBarSize={32} />
+        <Legend wrapperStyle={{ paddingTop: 12, fontSize: 12 }} />
+        <Bar dataKey="participants" name="Participants" fill={NAVY}  radius={[0, 6, 6, 0]} maxBarSize={14} />
+        <Bar dataKey="submissions"  name="Submissions"  fill={CORAL} radius={[0, 6, 6, 0]} maxBarSize={14} />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -106,20 +133,66 @@ export function SubmissionsOverTimeChart({ data }: { data: WeeklySubmission[] })
 
 export function DegreeBreakdownChart({ data }: { data: DegreeSlice[] }) {
   if (!data.length) return <Empty label="No degree data yet" />
+
+  const total = data.reduce((sum, d) => sum + d.count, 0)
+
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <PieChart>
-        <Pie data={data as any[]} dataKey="count" nameKey="degree" cx="50%" cy="50%"
-          outerRadius={90} innerRadius={48} paddingAngle={3}
-          label={({ name, percent }) => (percent ?? 0) > 0.05 ? `${truncate(name ?? "", 14)} ${((percent ?? 0) * 100).toFixed(0)}%` : ""}
-          labelLine={false}
-        >
-          {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-        </Pie>
-        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [v, "Students"]} />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-      </PieChart>
-    </ResponsiveContainer>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={data as any[]}
+            dataKey="count"
+            nameKey="degree"
+            cx="50%"
+            cy="50%"
+            outerRadius={90}
+            innerRadius={50}
+            paddingAngle={3}
+            label={false}
+            labelLine={false}
+          >
+            {data.map((_, i) => (
+              <Cell key={i} fill={COLORS[i % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={tooltipStyle}
+            formatter={(v: number, name: string) => [
+              `${v} students (${Math.round((v / total) * 100)}%)`,
+              name,
+            ]}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+
+      {/* Clean legend list */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        {data.map((d, i) => {
+          const pct = Math.round((d.count / total) * 100)
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+              <div style={{
+                width: 10, height: 10, borderRadius: 3, flexShrink: 0,
+                background: COLORS[i % COLORS.length],
+              }} />
+              <span style={{
+                flex: 1, fontSize: "0.8125rem", color: "var(--cp-text-secondary)",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                {d.degree}
+              </span>
+              <span style={{
+                fontSize: "0.8125rem", fontWeight: 700,
+                color: "var(--cp-navy)", flexShrink: 0,
+              }}>
+                {pct}%
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
