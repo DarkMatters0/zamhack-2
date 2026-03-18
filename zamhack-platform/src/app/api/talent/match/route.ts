@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   // Fetch all students with their skills, challenge history, evaluations, and challenge skills
-  const { data: students } = await supabase
+  const { data: students, error: studentsError } = await supabase
     .from("profiles")
     .select(`
       id, first_name, last_name, bio, university, degree, updated_at,
@@ -21,7 +21,9 @@ export async function POST(req: NextRequest) {
       challenge_participants (
         status,
         joined_at,
-        evaluations ( score ),
+        submissions (
+          evaluations ( score )
+        ),
         challenges (
           id,
           challenge_skills (
@@ -32,7 +34,11 @@ export async function POST(req: NextRequest) {
     `)
     .eq("role", "student")
 
-  if (!students) return NextResponse.json({ error: "No students found" }, { status: 404 })
+  if (studentsError) {
+    console.error("[api/talent/match] students query error:", studentsError)
+    return NextResponse.json({ error: studentsError.message }, { status: 500 })
+  }
+  if (!students) return NextResponse.json({ error: "No students found" }, { status: 500 })
 
   // Fetch all winners
   const { data: winners } = await supabase

@@ -8,7 +8,8 @@
       "Bash(npm run:*)",
       "Bash(ls:*)",
       "Bash(npx tsc:*)",
-      "Bash(curl -s http://localhost:3000/api/talent/recommend)"
+      "Bash(curl -s http://localhost:3000/api/talent/recommend)",
+      "Bash(find /c/Users/Vlad/zamhack-1/zamhack-platform/src/components -name *profile* -o -name *skill*)"
     ]
   }
 }

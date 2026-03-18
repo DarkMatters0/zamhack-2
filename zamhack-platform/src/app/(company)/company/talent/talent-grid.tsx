@@ -126,14 +126,20 @@ export function TalentGrid({ initialStudents, isCacheStale, companyUserId }: Tal
     if (trimmed.length < 3) return
 
     debounceRef.current = setTimeout(async () => {
-      const keywords = trimmed.split(/\s+/).filter(Boolean)
+      // Send the full phrase as a single item — substring matching in compute-match-score
+      // handles both single-word ("python") and multi-word ("social media marketing") queries
+      const requiredSkills = [trimmed]
       setIsScoring(true)
       try {
-        const res = await fetch("/api/talent/match", {
+        const url = "/api/talent/match"
+        const body = JSON.stringify({ requiredSkills })
+        console.log("[talent-grid] match fetch →", url, body)
+        const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ requiredSkills: keywords }),
+          body,
         })
+        console.log("[talent-grid] match fetch ←", res.status, res.statusText)
         if (!res.ok) return
         const data = await res.json()
         if (data.students && Array.isArray(data.students)) {
@@ -150,6 +156,17 @@ export function TalentGrid({ initialStudents, isCacheStale, companyUserId }: Tal
               return { ...student, matchScore: Math.max(cached, newScore) }
             })
           )
+          // Refresh the talent_match_cache for each re-scored student so the
+          // baseline cache stays in sync with the latest computed scores
+          for (const s of data.students) {
+            if (s.id) {
+              fetch("/api/talent/recompute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ studentId: s.id }),
+              }).catch(() => {})
+            }
+          }
         }
       } catch {
         // ignore

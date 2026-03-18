@@ -1,13 +1,14 @@
 import { createClient } from "@/utils/supabase/server"
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog"
+import { SkillsSection } from "@/components/profile/skills-section"
 import { Database } from "@/types/supabase"
 import { redirect } from "next/navigation"
 import { Github, Linkedin, FileText, GraduationCap, BookOpen, ExternalLink } from "lucide-react"
 
-// ── Types (identical to original) ─────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Profile = Database["public"]["Tables"]["profiles"]["Row"]
 
-// ── Data fetching (identical to original) ─────────────────────────────────────
+// ── Data fetching ──────────────────────────────────────────────────────────────
 async function getProfileData() {
   const supabase = await createClient()
 
@@ -20,45 +21,76 @@ async function getProfileData() {
     redirect("/login")
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
+  const [
+    { data: profile },
+    { data: studentSkillsRaw },
+    { data: allSkills },
+    { data: earnedParticipants },
+  ] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
 
-  if (profileError) {
-    console.error("Error fetching profile:", profileError)
+    supabase
+      .from("student_skills")
+      .select("id, level, skill:skills(id, name, category)")
+      .eq("profile_id", user.id),
+
+    supabase
+      .from("skills")
+      .select("id, name, category")
+      .order("name"),
+
+    supabase
+      .from("challenge_participants")
+      .select("challenges(challenge_skills(skills(id, name, category)))")
+      .eq("profile_id", user.id)
+      .eq("status", "completed"),
+  ])
+
+  // Flatten and deduplicate challenge-earned skills
+  const earnedSkillMap = new Map<string, { id: string; name: string; category: string | null }>()
+  for (const p of earnedParticipants ?? []) {
+    for (const cs of (p.challenges as any)?.challenge_skills ?? []) {
+      const s = cs.skills
+      if (s?.id && !earnedSkillMap.has(s.id)) {
+        earnedSkillMap.set(s.id, { id: s.id, name: s.name, category: s.category ?? null })
+      }
+    }
   }
 
   return {
     profile: profile as Profile | null,
     user,
+    studentSkills: (studentSkillsRaw ?? []) as Array<{
+      id: string
+      level: Database["public"]["Enums"]["proficiency_level"]
+      skill: { id: string; name: string; category: string | null }
+    }>,
+    allSkills: (allSkills ?? []) as Array<{ id: string; name: string; category: string | null }>,
+    earnedSkills: [...earnedSkillMap.values()],
   }
 }
 
-// ── Helper (identical to original) ────────────────────────────────────────────
+// ── Helper ─────────────────────────────────────────────────────────────────────
 const getInitials = (firstName: string | null, lastName: string | null): string => {
   const first = firstName?.charAt(0).toUpperCase() || ""
   const last  = lastName?.charAt(0).toUpperCase()  || ""
   return first + last || "U"
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Page ───────────────────────────────────────────────────────────────────────
 export default async function ProfilePage() {
-  const { profile } = await getProfileData()
+  const { profile, user, studentSkills, allSkills, earnedSkills } = await getProfileData()
 
   const fullName = profile
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "User"
     : "User"
 
-  // Same headline logic as original
   const headline = profile
     ? [profile.university, profile.degree].filter(Boolean).join(" • ") || "No education information"
     : "No education information"
 
   const initials = getInitials(profile?.first_name || null, profile?.last_name || null)
 
-  // Collect social links that actually exist
   const socialLinks = [
     { href: profile?.github_url,   label: "GitHub",   icon: Github   },
     { href: profile?.linkedin_url, label: "LinkedIn",  icon: Linkedin },
@@ -70,7 +102,6 @@ export default async function ProfilePage() {
 
       {/* ── Hero card ──────────────────────────────────────────────────── */}
       <div className="pf-hero">
-        {/* Gradient banner */}
         <div className="pf-hero-banner" />
 
         <div className="pf-hero-body">
@@ -94,11 +125,9 @@ export default async function ProfilePage() {
                 <h1 className="pf-name">{fullName}</h1>
                 <p className="pf-headline">{headline}</p>
               </div>
-              {/* EditProfileDialog is unchanged — just repositioned */}
               <EditProfileDialog profile={profile} />
             </div>
 
-            {/* Social pills (only shown if links exist) */}
             {socialLinks.length > 0 && (
               <div className="pf-social-row">
                 {socialLinks.map(({ href, label, icon: Icon }) => (
@@ -237,18 +266,13 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          {/* Skills — placeholder (identical to original) */}
-          <div className="pf-card">
-            <div className="pf-card-header">
-              <div className="pf-card-icon pf-card-icon-navy">
-                <span style={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "-0.02em" }}>SK</span>
-              </div>
-              <h2 className="pf-card-title">Skills</h2>
-            </div>
-            <div className="pf-card-body">
-              <p className="pf-empty">Skills section coming soon.</p>
-            </div>
-          </div>
+          {/* Skills (portfolio + earned) */}
+          <SkillsSection
+            studentId={user.id}
+            initialSkills={studentSkills}
+            availableSkills={allSkills}
+            earnedSkills={earnedSkills}
+          />
 
         </div>
       </div>

@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server"
 import { Database } from "@/types/supabase"
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"]
+type ProficiencyLevel = Database["public"]["Enums"]["proficiency_level"]
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
@@ -67,6 +68,62 @@ export async function updateProfile(formData: FormData) {
   if (error) {
     return { error: error.message }
   }
+
+  revalidatePath("/profile")
+  return { success: true }
+}
+
+export async function addSkill(skillId: string, level: ProficiencyLevel) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { error: "Not logged in" }
+
+  // Enforce limits server-side
+  const { data: existing } = await supabase
+    .from("student_skills")
+    .select("id, level")
+    .eq("profile_id", user.id)
+
+  if (existing) {
+    if (existing.length >= 15) return { error: "Maximum 15 skills allowed" }
+    if (existing.filter((s) => s.level === level).length >= 5)
+      return { error: `Maximum 5 ${level} skills allowed` }
+    if (existing.some((s) => (s as any).skill_id === skillId))
+      return { error: "Skill already added" }
+  }
+
+  const { data, error } = await supabase
+    .from("student_skills")
+    .insert({ profile_id: user.id, skill_id: skillId, level })
+    .select("id")
+    .single()
+
+  if (error) return { error: error.message }
+
+  revalidatePath("/profile")
+  return { success: true, id: data.id }
+}
+
+export async function removeSkill(studentSkillId: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { error: "Not logged in" }
+
+  const { error } = await supabase
+    .from("student_skills")
+    .delete()
+    .eq("id", studentSkillId)
+    .eq("profile_id", user.id)
+
+  if (error) return { error: error.message }
 
   revalidatePath("/profile")
   return { success: true }

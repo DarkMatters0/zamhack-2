@@ -29,9 +29,13 @@ export function computeMatchScore(
 
   // --- Skill overlap (40%) ---
   if (requiredSkills.length > 0) {
-    const matches = requiredSkills.filter((rs) =>
-      mergedSkillNames.has(rs.toLowerCase())
-    )
+    const mergedSkillNamesArr = Array.from(mergedSkillNames)
+    const matches = requiredSkills.filter((rs) => {
+      const rsLower = rs.toLowerCase()
+      return mergedSkillNamesArr.some(
+        (ss) => ss.includes(rsLower) || rsLower.includes(ss)
+      )
+    })
     score += (matches.length / requiredSkills.length) * 40
   } else {
     score += mergedSkillNames.size > 0 ? 20 : 0 // partial credit if they have any skills
@@ -56,7 +60,8 @@ export function computeMatchScore(
 
   // --- Avg evaluation score (15%) ---
   const allScores = participants
-    .flatMap((p: any) => p.evaluations || [])
+    .flatMap((p: any) => p.submissions || [])
+    .flatMap((s: any) => s.evaluations || [])
     .map((e: any) => e.score)
     .filter((s: any) => s != null)
   const avgScore =

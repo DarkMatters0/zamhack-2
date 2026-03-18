@@ -1307,3 +1307,168 @@
 .student-portal .pf-card .pf-links-list {
   padding: 0;
 }
+
+/* ==================================================================
+   16. SKILLS SECTION  (.pf-skills-*)
+   ================================================================== */
+
+/* "Add Skill" button in card header */
+.student-portal .pf-skills-add-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ff9b87, #e8836f);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(255, 155, 135, 0.3);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.student-portal .pf-skills-add-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(255, 155, 135, 0.4);
+}
+.student-portal .pf-skills-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Level groups */
+.student-portal .pf-skills-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.student-portal .pf-skills-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.student-portal .pf-skills-level-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+}
+
+/* Skill tag container */
+.student-portal .pf-skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+/* Skill pill */
+.student-portal .pf-skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 4px 8px 4px 10px;
+  border-radius: 999px;
+  border: 1px solid;
+  line-height: 1;
+}
+
+/* Level colour variants */
+.student-portal .pf-skill-tag-beginner {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #e5e7eb;
+}
+.student-portal .pf-skill-tag-intermediate {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+.student-portal .pf-skill-tag-advanced {
+  background: #fff5f3;
+  color: #e8836f;
+  border-color: #fecdc7;
+}
+.student-portal .pf-skill-tag-earned {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+/* Remove (×) button inside tag */
+.student-portal .pf-skill-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.55;
+  padding: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+.student-portal .pf-skill-remove:hover:not(:disabled) {
+  opacity: 1;
+}
+.student-portal .pf-skill-remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Counter line */
+.student-portal .pf-skills-count {
+  font-size: 0.71rem;
+  color: #c4c9d4;
+  margin-top: 0.875rem;
+  text-align: right;
+}
+
+/* Earned section description */
+.student-portal .pf-skills-earned-desc {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ── Modal body styles (no .student-portal scope — Dialog renders in portal) ── */
+.pf-skills-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.25rem 0 0.5rem;
+}
+.pf-skills-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.pf-skills-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+.pf-skills-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+}
+.pf-skills-warn {
+  font-size: 0.75rem;
+  color: #d97706;
+  margin-top: 0.2rem;
+}
+.pf-skills-hint {
+  font-size: 0.73rem;
+  color: #9ca3af;
+  margin-top: 0.2rem;
+}
