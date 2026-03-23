@@ -36,7 +36,7 @@ export function JoinButton({ challengeId, isFull = false }: JoinButtonProps) {
       const result = await joinChallenge(challengeId, undefined, force)
 
       if (result.error === "advanced_limit") {
-        const date = new Date(result.nextEligibleAt).toLocaleDateString()
+        const date = new Date(result.nextEligibleAt!).toLocaleDateString()
         toast.error(`Weekly limit reached — you can join another beginner challenge on ${date}`)
         return
       } else if (result.error === "skill_gate") {

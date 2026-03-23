@@ -128,7 +128,7 @@ const toggleIndustry = (industry: string) => {
           type="button"
           onClick={() => setShowFilters((v) => !v)}
           className="flex items-center gap-1.5 rounded-md border bg-background px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted md:hidden"
-          aria-expanded={showFilters}
+          aria-expanded={showFilters ? "true" : "false"}
         >
           <Filter className="h-4 w-4" />
           Filters
